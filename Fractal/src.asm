@@ -110,10 +110,10 @@ _main:
   ; begin main
   ; push c.r
   fld dword [ystart]
-  mov bh, 30
+  mov bh, 31
   .outer:           ; loop over y
     ; y loop
-    mov bl, 80
+    mov bl, 81
     ; push c.i
     fld dword [xstart]
     .inner:
@@ -123,13 +123,13 @@ _main:
       mov rdi, rax
       call _drawchar
       ; y += ps
-      fld dword [ps]
+      fld dword [psx]
       faddp
       dec bl
       test bl, bl
       jnz .inner
     faddp st0
-    fld dword [ps]
+    fld dword [psy]
     faddp
     mov edi, 0x0A
     call _putchar
@@ -149,7 +149,8 @@ width: dd 80.0      ; width in pixels
 height: dd 30.0     ; height in pixels
 xstart: dd -2.0
 ystart: dd -2.0
-ps: dd 0.05
+psx: dd 0.05
+psy: dd 0.133333333
 intTest: dd 0
 status: dw 0
 convergeChar: dd 0x2A ; asterisk
