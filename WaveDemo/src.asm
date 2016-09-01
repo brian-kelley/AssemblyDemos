@@ -56,8 +56,8 @@ ret
 section .data
 
 width: dq 40.0
-time: dq 0.785
-delta: dq 0.1
+time: dq 0.0
+delta: dq 0.16
 intval: dd 0
 delayticks: dq 0x1FFFFFF
 empty: dd ' '
