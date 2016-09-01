@@ -113,7 +113,7 @@ _main:
   mov bh, 31
   .outer:           ; loop over y
     ; y loop
-    mov bl, 81
+    mov bl, 80
     ; push c.i
     fld dword [xstart]
     .inner:
@@ -147,10 +147,10 @@ section .data
 itercap: dd 1000
 width: dd 80.0      ; width in pixels
 height: dd 30.0     ; height in pixels
-xstart: dd -2.0
-ystart: dd -2.0
-psx: dd 0.05
-psy: dd 0.133333333
+xstart: dd -1.94
+ystart: dd -1.94
+psx: dd 0.0494
+psy: dd 0.13
 intTest: dd 0
 status: dw 0
 convergeChar: dd 0x2A ; asterisk
