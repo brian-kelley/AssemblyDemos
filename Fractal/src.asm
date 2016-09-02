@@ -2,6 +2,7 @@ default rel
 
 extern _putchar
 extern _printf
+extern _puts
 
 global _main
 global _iterate
@@ -12,80 +13,65 @@ section .text
 _iterate:
   push rbp
   mov rbp, rsp
-  xor rax, rax
-  fld st0
-  fmul st1
-  fld st2
-  fmul st3
-  faddp
-  fistp dword [intTest]
-  mov edx, [intTest]
-  cmp edx, 4
-  jge .asdf
-  pop rbp
-  ret
-  .asdf:
-  inc rax
-  pop rbp
-  ret
-
-  xor rax, rax
+  ; fp stack has 2: cr, ci
+  ; st0 = cr, st1 = ci
   ; 2
-  ; st0 = c.imag, st1 = c.real 
-  ; push z.imag and z.real
+  ; push z.imag and z.real (both initially zero)
   fldz
-  ; 3
   fldz
   ; 4: zr, zi, cr, ci
-  xor rcx, rcx            ; rcx counts iterations
-  mov r8, [itercap]
+  mov rcx, [itercap]
+  inc rcx
   .loop:
-    ; get zi^2
-    fld st1
-    fmul st0
-    ; 5
+    ; print out FPU stack top: should be same every iteration
     ; get zr^2
-    fld st3
-    fmul st0
-    ; 6: zr2, zi2, zr, zi, cr, ci
-    ; get 2 * zr*zi
-    fld st2
-    fmul st4
-    ; 7: zrzi, zr2, zi2, zr, zi, cr, ci
-    fadd st0
-    ; st0 = zrzi
-    ; replace zi with (2*zr*zi) + c.i
-    fadd st6
-    ; put st0 in zi's place
-    fxch st4
-    ; pop?
-    ffree st0
-    ; get zr2 - zi2 + zr
-    ; 6: zr2, zi2, zr, zi, cr, ci
     fld st0
-    ; 7
-    fsub st2
-    fadd st3, st0
-    ffree st0
-    ; test for divergence
+    fmul st0            ; squares st0
+    ; 5
+    ; get zi^2
+    fld st2
+    fmul st0
+    ; get magnitude
     fld st0
     fadd st2
-    inc rcx
     fistp dword [intTest]
-    mov edx, [intTest]
-    ; pop 3 regs so there is just zr, zi, cr, ci
-    ffree st0
-    ffree st0
-    ; cpu comparison flags now set 
-    cmp edx, 4
-    jl .diverged
-    cmp rcx, r8
-    je .converged
+    mov eax, [intTest]
+    cmp eax, 4
+    jge .done1  ; pops zi^2 and zr^2
+    ; get zr * zi
+    fld st2
+    fmul st4
+    ; double it
+    fadd st0
+    ; add ci
+    fadd st6
+    ; put in zi's place and pop
+    fxch st4
+    faddp st0
+    ; get new zr
+    fld st1
+    fsubp st1
+    ; zr^2 - zi^2, zr^2, zr, zi, cr, ci
+    fadd st4
+    ; put in zr's place
+    fxch st2
+    ; pop 2
+    faddp st0
+    faddp st0
+    ; test for divergence
+    dec rcx
+    test rcx, rcx
+    jz .done2
     jmp .loop
   ; return rax = 1 if converge, 0 otherwise
-  .converged:
-  inc rax
-  .diverged:
+  .done1:
+  faddp st0
+  faddp st0
+  .done2:
+  mov rax, rcx
+  faddp st0
+  faddp st0
+  pop rbp
   ret
 
 _drawchar:
@@ -93,11 +79,11 @@ _drawchar:
   mov rbp, rsp
   test rdi, rdi
   jnz .inSet
-    mov edi, [divergeChar]
+    mov edi, 0x2A
     call _putchar
     jmp .drawDone
   .inSet:
-    mov edi, [convergeChar]
+    mov edi, 0x1F
     call _putchar
   .drawDone:
   pop rbp
@@ -107,52 +93,58 @@ _main:
   push rbp
   mov rbp, rsp
   finit
-  ; begin main
   ; push c.r
   fld dword [ystart]
   mov bh, 31
   .outer:           ; loop over y
     ; y loop
-    mov bl, 80
+    mov bl, 120
     ; push c.i
     fld dword [xstart]
     .inner:
-      ; line, x loop
-      ; ystart += ps
+      ; x loop
       call _iterate  ; eax is 1 if in set
       mov rdi, rax
       call _drawchar
       ; y += ps
       fld dword [psx]
-      faddp
+      faddp st1
       dec bl
       test bl, bl
       jnz .inner
+    ; pop x (cr) from inner loop
     faddp st0
     fld dword [psy]
-    faddp
+    faddp st1
     mov edi, 0x0A
     call _putchar
     dec bh
     test bh, bh
     jnz .outer
   ; end main
-  ffree st0
+  faddp st0
+  ; return 0 for success
   xor rax, rax
   pop rbp
   ret
 
 section .data
 
-itercap: dd 1000
-width: dd 80.0      ; width in pixels
-height: dd 30.0     ; height in pixels
+status: dw 0
+intTest: dd 0
+debug1: dd 0
+debug2: dd 0
+
+section .rodata
+
+itercap: dq 100000
 xstart: dd -1.94
 ystart: dd -1.94
 psx: dd 0.0494
 psy: dd 0.13
-intTest: dd 0
-status: dw 0
-convergeChar: dd 0x2A ; asterisk
-divergeChar: dd 0x21  ; space
 fmt: db '%i ', 0
+fmt2: db '%x', 0x0A, 0
+fmt3: db '(%4i,%4i)   ', 0
+msg1: db 'Starting outer loop', 0
+msg2: db 'Done with iterate()', 0
+

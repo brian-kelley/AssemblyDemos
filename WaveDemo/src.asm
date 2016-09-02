@@ -10,7 +10,7 @@ section .text
 _main:
   push rbp
   mov rbp, rsp
-  fninit
+  finit
   ; begin main
   fld qword [width]
   fld qword [delta]
@@ -57,7 +57,7 @@ section .data
 
 width: dq 40.0
 time: dq 0.0
-delta: dq 0.16
+delta: dq 0.06
 intval: dd 0
 delayticks: dq 0x1FFFFFF
 empty: dd ' '
